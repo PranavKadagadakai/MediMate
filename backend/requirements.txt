@@ -1,0 +1,7 @@
+django-cors-headers
+Django==5.2.1
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+gTTS==2.5.4
+transformers==4.51.3
+sentencepiece
