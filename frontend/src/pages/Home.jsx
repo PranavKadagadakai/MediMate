@@ -13,7 +13,7 @@ function Home() {
       social_links: {
         instagram: "#",
         github: "https://github.com/PranavKadagadakai",
-        linkedin: "https://www.linkedin.com/in/pranav-kadagadakai-008b531ba/",
+        linkedin: "https://www.linkedin.com/in/pranav-kadagadakai/",
       },
     },
     {
@@ -72,13 +72,12 @@ function Home() {
       description:
         "Patients and doctors can message directly or post in a health-focused forum.\nSupport peer-to-peer engagement, Q&A, and community health discussions — all within a role-aware and secure messaging system.",
     },
-    // {
-    //   IconImgSrc: "https://www.svgrepo.com/show/511824/calendar-clock.svg",
-    //   IconImgAlt: "Calendar Icon",
-    //   title: "Health Tracker & Appointment Scheduler",
-    //   description:
-    //     "Track appointments, treatments, symptoms, and medications in one place.\nAutomate reminders and calendar sync. Designed to reduce missed appointments and empower patient self-care.",
-    // },
+    {
+      IconTag: "bi bi-calendar-check",
+      title: "Health Tracker & Appointment Scheduler",
+      description:
+        "Track appointments, treatments, symptoms, and medications in one place.\nAutomate reminders and calendar sync. Designed to reduce missed appointments and empower patient self-care.",
+    },
     {
       IconImgSrc: TranslateIcon,
       IconImgAlt: "Translate Icon",

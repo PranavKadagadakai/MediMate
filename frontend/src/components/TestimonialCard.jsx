@@ -34,7 +34,7 @@ function TestimonialCard({ data }) {
                 rel="noopener noreferrer"
                 title="Instagram"
               >
-                <i className="fab fa-instagram"></i>
+                <i className="bi bi-instagram"></i>
               </a>
               <a
                 href={data.social_links.github}
@@ -43,7 +43,7 @@ function TestimonialCard({ data }) {
                 rel="noopener noreferrer"
                 title="GitHub"
               >
-                <i className="fab fa-github"></i>
+                <i className="bi bi-github"></i>
               </a>
               <a
                 href={data.social_links.linkedin}
@@ -52,7 +52,7 @@ function TestimonialCard({ data }) {
                 rel="noopener noreferrer"
                 title="LinkedIn"
               >
-                <i className="fab fa-linkedin-in"></i>
+                <i className="bi bi-linkedin"></i>
               </a>
             </div>
           </div>

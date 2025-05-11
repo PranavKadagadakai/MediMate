@@ -15,11 +15,7 @@ function FeatureCard({ data }) {
                 style={{ width: "72px", height: "72px" }} // 3x image
               />
             ) : (
-              data.IconSvg && (
-                <div style={{ width: "72px", height: "72px" }}>
-                  {data.IconSvg}
-                </div>
-              )
+              data.IconTag && <i className={data.IconTag} />
             )}
           </div>
           <div>
