@@ -1,4 +1,4 @@
-# 🩺 Doctor-Patient Communication System
+# 🩺 MediMate - Doctor-Patient Communication System
 
 An AI-powered healthcare platform to enhance doctor-patient interaction, improve medical communication, and provide intelligent assistance through cutting-edge NLP technologies.
 
