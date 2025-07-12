@@ -5,7 +5,7 @@ from django.db.models import Q
 from .models import Chat, Message
 from .serializers import ChatSerializer, MessageSerializer
 from users.models import Profile, CustomUser
-
+from users.serializers import ProfileSerializer
 class DoctorListView(generics.ListAPIView):
     queryset = Profile.objects.filter(role='doctor')
     serializer_class = ProfileSerializer
