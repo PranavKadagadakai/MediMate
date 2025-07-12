@@ -1,21 +1,35 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from transformers import MarianMTModel, MarianTokenizer
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from googletrans import Translator
 from gtts import gTTS
-import tempfile
-
-model_name = 'Helsinki-NLP/opus-mt-en-fr'
-tokenizer = MarianTokenizer.from_pretrained(model_name)
-model = MarianMTModel.from_pretrained(model_name)
+import io
+from django.http import HttpResponse
 
 class TranslateTTSAPIView(APIView):
-    def post(self, request):
-        text = request.data.get("text", "")
-        translated = model.generate(**tokenizer(text, return_tensors="pt", padding=True))
-        translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
+    permission_classes = [IsAuthenticated]
 
-        tts = gTTS(text=translated_text, lang='fr')
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-            tts.save(tmp.name)
-            audio_url = request.build_absolute_uri('/media/' + tmp.name.split('/')[-1])
-        return Response({"translated": translated_text, "audio_url": audio_url})
+    def post(self, request):
+        try:
+            data = request.data
+            text = data.get('text')
+            target_lang = data.get('target_lang')
+
+            if not text or not target_lang:
+                return Response({"error": "Missing 'text' or 'target_lang'"}, status=status.HTTP_400_BAD_REQUEST)
+
+            translator = Translator()
+            translated = translator.translate(text, dest=target_lang)
+            
+            tts = gTTS(text=translated.text, lang=target_lang)
+            audio_io = io.BytesIO()
+            tts.write_to_fp(audio_io)
+            audio_io.seek(0)
+            
+            response = HttpResponse(audio_io, content_type='audio/mpeg')
+            response['Content-Disposition'] = 'inline; filename=translated_audio.mp3'
+            return response
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

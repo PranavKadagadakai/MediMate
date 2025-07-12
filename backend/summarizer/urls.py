@@ -1,3 +1,5 @@
 from django.urls import path
 from .views import SummarizerAPIView
-urlpatterns = [ path('', SummarizerAPIView.as_view()) ]
+urlpatterns = [
+    path('summarize/', SummarizerAPIView.as_view(), name='summarize'),
+]

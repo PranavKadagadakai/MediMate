@@ -3,13 +3,12 @@ from django.db import models
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
-
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
 class Profile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
-    role = models.CharField(max_length=50, blank=True)
+    role = models.CharField(max_length=50, choices=[('doctor', 'Doctor'), ('patient', 'Patient')])
     full_name = models.CharField(max_length=120, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
     phone = models.CharField(max_length=15, blank=True)

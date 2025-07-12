@@ -1,5 +1,6 @@
 import { useProfile } from "../context/ProfileContext.jsx";
 import DashboardFeatureCard from "../components/DashboardFeatureCard.jsx";
+import LoadingIndicator from "../components/LoadingIndicator.jsx";
 
 const Dashboard = () => {
   const { profile, loading } = useProfile();
@@ -20,14 +21,8 @@ const Dashboard = () => {
     {
       title: "Secure Messaging",
       text: "Encrypted real-time communication with patients.",
-      path: "/messaging",
+      path: "/messenger",
       linkText: "Open Messenger",
-    },
-    {
-      title: "Patient Tracking",
-      text: "Monitor patient recovery and appointment status.",
-      path: "/history",
-      linkText: "Track Now",
     },
   ];
 
@@ -35,7 +30,7 @@ const Dashboard = () => {
     {
       title: "AI Chatbot",
       text: "Get instant answers to your health-related queries.",
-      path: "/chat",
+      path: "/chatbot",
       linkText: "Open Chatbot",
     },
     {
@@ -53,7 +48,7 @@ const Dashboard = () => {
     {
       title: "Messaging",
       text: "Chat with your assigned doctor anytime.",
-      path: "/messaging",
+      path: "/messenger",
       linkText: "Message Now",
     },
     {
@@ -67,9 +62,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="text-center mt-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <LoadingIndicator />
       </div>
     );
   }
@@ -88,17 +81,18 @@ const Dashboard = () => {
           </p>
           <h4 className="text-dark mt-4">Welcome, {username}!</h4>
         </div>
-
         <div className="row g-4">
-          {role === "doctor"
-            ? doctorFeatures.map((feature, index) => (
-                <DashboardFeatureCard key={index} featureData={feature} />
-              ))
-            : role === "patient"
-            ? patientFeatures.map((feature, index) => (
-                <DashboardFeatureCard key={index} featureData={feature} />
-              ))
-            : null}
+          {role === "doctor" ? (
+            doctorFeatures.map((feature, index) => (
+              <DashboardFeatureCard key={index} featureData={feature} />
+            ))
+          ) : role === "patient" ? (
+            patientFeatures.map((feature, index) => (
+              <DashboardFeatureCard key={index} featureData={feature} />
+            ))
+          ) : (
+            <p>No features available for your role.</p>
+          )}
         </div>
       </div>
     </section>

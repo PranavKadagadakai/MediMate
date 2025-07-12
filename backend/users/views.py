@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Profile
@@ -17,9 +17,10 @@ class ProfileAPIView(APIView):
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
 
-    def post(self, request):
+    def patch(self, request):
         profile, _ = Profile.objects.get_or_create(user=request.user)
         serializer = ProfileSerializer(profile, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

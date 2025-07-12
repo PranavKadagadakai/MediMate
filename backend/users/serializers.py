@@ -7,20 +7,23 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Profile
-        fields = ['username', 'email', 'full_name', 'role', 'age', 'phone', 'address']
+        fields = ['id', 'username', 'email', 'full_name', 'role', 'age', 'phone', 'address']
 
 class RegisterSerializer(serializers.ModelSerializer):
-    role = serializers.CharField(write_only=True)
-    profile = ProfileSerializer(required=False)
+    profile = ProfileSerializer(required=True)
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'username', 'password', 'role', 'profile']
+        fields = ['email', 'username', 'password', 'profile']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        role = validated_data.pop('role')
-        profile_data = validated_data.pop('profile', {})
-        user = CustomUser.objects.create_user(**validated_data)
-        Profile.objects.create(user=user, role=role, **profile_data)
+        profile_data = validated_data.pop('profile')
+        password = validated_data.pop('password')
+        
+        user = CustomUser(**validated_data)
+        user.set_password(password)
+        user.save()
+        
+        Profile.objects.create(user=user, **profile_data)
         return user
