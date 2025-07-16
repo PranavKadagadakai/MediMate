@@ -20,44 +20,51 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // ✨ FIX: Create the nested structure the backend expects.
+    const dataToSubmit = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      profile: {
+        full_name: formData.full_name,
+        role: formData.role,
+        age: formData.age || null, // Send null if age is empty
+        phone: formData.phone,
+        address: formData.address,
+      },
+    };
+
     try {
-      const response = await api.post("api/auth/register/", formData);
-      if (response.status === 200) {
+      // Send the correctly formatted data
+      const response = await api.post("api/auth/register/", dataToSubmit);
+
+      // ✨ FIX: Check for 201 Created status
+      if (response.status === 201) {
         alert("Registration successful! Please log in.");
-        console.log("Registration successful");
-        navigate("/login");
-      } else if (response.status === 201) {
-        alert("Registration successful! Please log in.");
-        console.log("Registration successful");
         navigate("/login");
       } else {
-        alert("Registration failed. Please try again.");
-        console.log("Registration failed");
-        console.log(response);
-        console.log(response.status);
-        console.log(response.data);
+        alert("Registration failed. Please check your input and try again.");
       }
     } catch (error) {
       if (error.response && error.response.data) {
         const errors = error.response.data;
-        if (errors.username) {
-          alert(`Username error: ${errors.username.join(", ")}`);
-        } else if (errors.password) {
-          alert(`Password error: ${errors.password.join(", ")}`);
-        } else {
-          alert("Something went wrong.");
-        }
+        // Combine all error messages into one alert
+        const messages = Object.values(errors).flat().join("\n");
+        alert(messages || "An error occurred. Please try again.");
+      } else {
+        alert("Something went wrong with the connection. Please try again.");
       }
+      console.error("Registration error:", error);
     } finally {
       setLoading(false);
     }
-    console.log("Registering:", formData);
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-40 bg-light">
+    <div className="d-flex justify-content-center align-items-center py-5 bg-light">
       <div
-        className="card p-4 shadow"
+        className="card p-4 shadow-sm"
         style={{ maxWidth: "500px", width: "100%" }}
       >
         <h3 className="text-center mb-3">Sign Up</h3>

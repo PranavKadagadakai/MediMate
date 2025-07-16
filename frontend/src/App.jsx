@@ -16,10 +16,8 @@ import Logout from "./pages/Logout.jsx";
 import Summarizer from "./pages/Summarizer.jsx";
 import Messenger from "./pages/Messenger.jsx";
 
-function RegisterAndLogout() {
-  localStorage.clear();
-  return <Register />;
-}
+// ✨ FIX: Removed the incorrect RegisterAndLogout component.
+// The logic is better handled in the Logout component and by navigating on success.
 
 function App() {
   return (
@@ -27,11 +25,11 @@ function App() {
       <header className="bg-white shadow text-gray-700">
         <Navbar />
       </header>
-      <div className="container mt-4">
+      <main className="flex-shrink-0">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<RegisterAndLogout />} />
+          <Route path="/register" element={<Register />} />
           <Route
             path="/logout"
             element={
@@ -121,7 +119,7 @@ function App() {
             }
           />
         </Routes>
-      </div>
+      </main>
     </>
   );
 }

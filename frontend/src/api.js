@@ -11,16 +11,9 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const accessToken = localStorage.getItem(ACCESS_TOKEN);
-  const refreshToken = localStorage.getItem(REFRESH_TOKEN);
-
   if (accessToken) {
     config.headers["Authorization"] = `Bearer ${accessToken}`;
   }
-
-  if (refreshToken) {
-    config.headers["Refresh-Token"] = refreshToken;
-  }
-
   return config;
 });
 
@@ -33,9 +26,13 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const refresh = localStorage.getItem(REFRESH_TOKEN);
-        const res = await axios.post(`${baseURL}api/auth/token/refresh/`, {
-          refresh,
-        });
+        // ✨ FIX: Use api.defaults.baseURL to construct the correct URL.
+        const res = await axios.post(
+          `${api.defaults.baseURL}api/auth/token/refresh/`,
+          {
+            refresh,
+          }
+        );
 
         if (res.status === 200) {
           const newAccessToken = res.data.access;

@@ -24,13 +24,13 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Local Apps
-    'users',
-    'chatbot',
-    'summarizer',
-    'translator',
-    'forum',
-    'tracker',
-    'messaging',
+    'users.apps.UsersConfig',
+    'chatbot.apps.ChatbotConfig',
+    'summarizer.apps.SummarizerConfig',
+    'translator.apps.TranslatorConfig',
+    'forum.apps.ForumConfig',
+    'tracker.apps.TrackerConfig',
+    'messaging.apps.MessagingConfig',
 ]
 
 MIDDLEWARE = [

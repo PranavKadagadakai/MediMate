@@ -5,10 +5,11 @@ function TestimonialCard({ data }) {
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="currentColor"
-          className="mb-3"
+          className="bi bi-quote mb-3"
           width="24"
           height="24"
-          viewBox="0 0 975.036 975.036"
+          // ✨ FIX: Corrected viewBox to match the icon's coordinate system.
+          viewBox="0 0 16 16"
         >
           <path d="M12 12a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1h-1.388q0-.527.062-1.054.093-.558.31-.992t.559-.683q.34-.279.868-.279V3.573q-.43.03-.816.03-1.09 0-1.94.422t-1.287 1.335q-.63.974-.968 2.224zM6 12a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1H4.612q0-.527.062-1.054.094-.558.31-.992t.559-.683q.34-.279.868-.279V3.573q-.43.03-.816.03-1.09 0-1.94.422T.83 6.33q-.63.974-.968 2.224z"></path>
         </svg>

@@ -1,3 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ✨ IMPROVEMENT: Removed all Tailwind CSS directives. */
+/* The project now relies solely on the Bootstrap CSS imported in main.jsx. */
+/* This file can be used for any additional custom global styles if needed. */
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
