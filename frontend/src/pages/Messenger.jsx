@@ -82,12 +82,23 @@ function Messenger() {
     }
   };
 
-  if (profileLoading)
+  if (profileLoading) {
     return (
       <div className="text-center mt-5">
         <LoadingIndicator />
       </div>
     );
+  }
+
+  // ADD THIS NULL CHECK FOR PROFILE
+  if (!profile) {
+    return (
+      <div className="text-center mt-5">
+        <p>User profile not available. Please log in or refresh.</p>
+        {/* You might want to add a button to navigate to login or retry loading */}
+      </div>
+    );
+  }
 
   return (
     <div className="container my-5">

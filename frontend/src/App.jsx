@@ -87,7 +87,7 @@ function App() {
             }
           />
           <Route
-            path="/messaging"
+            path="/messenger"
             element={
               <ProtectedRoute>
                 <Messenger />
