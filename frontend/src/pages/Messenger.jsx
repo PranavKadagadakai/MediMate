@@ -22,16 +22,26 @@ function Messenger() {
         .get(endpoint)
         .then((res) => {
           if (profile.role === "doctor") {
-            // For doctors, the contacts are the other participants in their chats
             const chatContacts = res.data.map((chat) => {
-              const otherParticipant = chat.participants_profile.find(
-                (p) => p.email !== profile.email
+              // Now that participants_profile is available from the API,
+              // find the other participant's profile directly from it.
+              const otherParticipantProfile = chat.participants_profile?.find(
+                (p) => p.id !== profile.id
               );
-              return { ...otherParticipant, chatId: chat.id };
+
+              // Construct the contact object using the actual profile data
+              return {
+                id: otherParticipantProfile?.id, // Use the actual ID from the profile
+                full_name: otherParticipantProfile?.full_name || null,
+                username:
+                  otherParticipantProfile?.username ||
+                  `User ${otherParticipantProfile?.id || "Unknown"}`, // Fallback for safety
+                chatId: chat.id,
+              };
             });
             setContacts(chatContacts);
           } else {
-            // For patients, the contacts are all doctors
+            // For patients, the contacts are all doctors (assuming they have full_name/username and id)
             setContacts(res.data);
           }
         })
@@ -53,7 +63,7 @@ function Messenger() {
     if (profile.role === "patient") {
       try {
         const res = await api.post(
-          `/api/messaging/chats/initiate/${contact.user}/`
+          `/api/messaging/chats/initiate/${contact.id}/`
         );
         setActiveChat({ ...contact, chatId: res.data.id });
         fetchMessages(res.data.id);
@@ -74,11 +84,15 @@ function Messenger() {
     try {
       await api.post(`/api/messaging/chats/${activeChat.chatId}/messages/`, {
         content: newMessage,
+        chat: activeChat.chatId,
       });
       setNewMessage("");
       fetchMessages(activeChat.chatId); // Refresh messages
     } catch (error) {
       console.error("Failed to send message:", error);
+      if (error.response && error.response.data) {
+        console.error("Server Response Data:", error.response.data);
+      }
     }
   };
 
@@ -90,12 +104,10 @@ function Messenger() {
     );
   }
 
-  // ADD THIS NULL CHECK FOR PROFILE
   if (!profile) {
     return (
       <div className="text-center mt-5">
         <p>User profile not available. Please log in or refresh.</p>
-        {/* You might want to add a button to navigate to login or retry loading */}
       </div>
     );
   }
@@ -121,13 +133,14 @@ function Messenger() {
                   <ul className="list-group list-group-flush">
                     {contacts.map((contact) => (
                       <li
-                        key={contact.id}
+                        key={contact.chatId || contact.id}
                         className={`list-group-item list-group-item-action ${
-                          activeChat?.id === contact.id ? "active" : ""
+                          activeChat?.chatId === contact.chatId ? "active" : ""
                         }`}
                         onClick={() => selectContact(contact)}
                         style={{ cursor: "pointer" }}
                       >
+                        {/* This will now use the actual full_name or username */}
                         {contact.full_name || contact.username}
                       </li>
                     ))}

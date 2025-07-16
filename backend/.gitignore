@@ -1,3 +1,4 @@
+# .gitignore for backend directory
 .venv
 .env
 db.sqlite3

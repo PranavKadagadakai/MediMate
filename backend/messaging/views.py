@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from django.db.models import Q
 from .models import Chat, Message
 from .serializers import ChatSerializer, MessageSerializer
-from users.models import Profile, CustomUser
+from users.models import Profile, CustomUser # Ensure CustomUser is imported
 from users.serializers import ProfileSerializer
 
 class DoctorListView(generics.ListAPIView):
@@ -37,7 +37,8 @@ class ChatListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return self.request.user.chats.all()
+        # ✨ FIX: Add prefetch_related to load participant profiles efficiently
+        return self.request.user.chats.all().prefetch_related('participants__profile')
 
 class MessageListView(generics.ListCreateAPIView):
     serializer_class = MessageSerializer
@@ -45,14 +46,14 @@ class MessageListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         chat_id = self.kwargs['chat_id']
-        # ✨ FIX: Ensure the user is a participant of the chat they are trying to access.
+        # Ensure the user is a participant of the chat they are trying to access.
         if not self.request.user.chats.filter(id=chat_id).exists():
             return Message.objects.none()
         return Message.objects.filter(chat_id=chat_id).order_by('timestamp')
 
     def perform_create(self, serializer):
         chat_id = self.kwargs['chat_id']
-        # ✨ FIX: Double-check permission before creating a message.
+        # Double-check permission before creating a message.
         if not self.request.user.chats.filter(id=chat_id).exists():
             return Response({"error": "Not authorized to post in this chat."}, status=status.HTTP_403_FORBIDDEN)
             
