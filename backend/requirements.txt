@@ -8,4 +8,4 @@ torch
 sentencepiece
 pdfplumber
 python-docx
-googletrans
+googletrans==4.0.0-rc1
