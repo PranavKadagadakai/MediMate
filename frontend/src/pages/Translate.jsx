@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../api";
 import LoadingIndicator from "../components/LoadingIndicator";
 
-// Sub-component for language panels (No changes needed here, shown for context)
+// Sub-component for language panels
 const LanguagePanel = ({
   lang,
   setLang,
@@ -53,6 +53,7 @@ const LanguagePanel = ({
             className="btn btn-sm btn-outline-secondary"
             onClick={() => onSpeak(text, lang)}
             title="Listen"
+            disabled={isLoading} // Disable listen button when loading
           >
             <i className="bi bi-volume-up"></i>
           </button>
@@ -72,6 +73,7 @@ const LanguagePanel = ({
           }`}
           onClick={onListen}
           title="Use Microphone"
+          disabled={isLoading} // Disable mic button when loading
         >
           <i className="bi bi-mic-fill"></i>
         </button>
@@ -90,6 +92,7 @@ function Translate() {
   const [error, setError] = useState("");
   const [isListening, setIsListening] = useState(false);
 
+  // Initialize SpeechRecognition API
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -100,15 +103,17 @@ function Translate() {
       return;
     }
 
+    // Set recognition properties
     recognition.lang = sourceLang;
-    recognition.continuous = false;
+    recognition.continuous = false; // Set to false for single utterance
     recognition.interimResults = false;
 
+    // Event handler for when speech is recognized
     recognition.onresult = (event) => {
       const spokenText = event.results[0][0].transcript;
       setSourceText(spokenText);
-      handleTranslate(spokenText, sourceLang, targetLang);
-      setIsListening(false);
+      setError(""); // Clear any previous errors
+      setIsListening(false); // Stop listening after result
     };
 
     // Improved error handling for speech recognition
@@ -131,32 +136,48 @@ function Translate() {
       setIsListening(false);
     };
 
+    // Event handler for when recognition ends
     recognition.onend = () => {
       setIsListening(false);
     };
-    // The recognition service only needs to be updated when the source language changes.
-  }, [recognition, sourceLang]);
 
+    // Cleanup function for useEffect
+    return () => {
+      if (recognition) {
+        recognition.stop(); // Ensure recognition is stopped when component unmounts or sourceLang changes
+      }
+    };
+  }, [recognition, sourceLang]); // Depend on recognition and sourceLang
+
+  // Function to toggle speech recognition on/off
   const toggleListen = () => {
     if (isListening) {
       recognition.stop();
     } else {
-      if (!sourceText) setTargetText("");
+      // Clear target text when starting new speech input
+      setTargetText("");
+      setSourceText(""); // Clear source text to prepare for new input
+      setError(""); // Clear any previous errors
       recognition.start();
     }
     setIsListening(!isListening);
   };
 
-  const handleTranslate = async (
-    textToTranslate = sourceText,
-    src = sourceLang,
-    dest = targetLang
-  ) => {
-    if (!textToTranslate.trim()) return;
+  // Function to handle text translation and TTS playback
+  const handleTranslate = async () => {
+    // Use current state values directly for translation
+    const textToTranslate = sourceText;
+    const src = sourceLang;
+    const dest = targetLang;
+
+    if (!textToTranslate.trim()) {
+      setError("Please enter text or use the microphone to provide input.");
+      return;
+    }
 
     setLoading(true);
     setError("");
-    setTargetText("");
+    setTargetText(""); // Clear previous translation
 
     try {
       const response = await api.post("/api/translate/translate/", {
@@ -168,38 +189,77 @@ function Translate() {
       const { translated_text, audio_base64 } = response.data;
       setTargetText(translated_text);
 
+      // Play the audio received from the backend
       const audio = new Audio(`data:audio/mpeg;base64,${audio_base64}`);
       audio.play();
     } catch (err) {
       const errorMessage =
         err.response?.data?.error || "Failed to translate. Please try again.";
       setError(errorMessage);
-      console.error(err);
+      console.error("Translation API error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSwapLanguages = () => {
-    setSourceLang(targetLang);
-    setTargetLang(sourceLang);
-    setSourceText(targetText);
-    setTargetText(sourceText);
-  };
+  // NEW FUNCTION: To fetch and play audio for a given text and language without affecting translation state
+  const playAudioOnly = async (textToSpeak, langToSpeak) => {
+    if (!textToSpeak.trim()) return;
 
-  const handleCopyToClipboard = (text) => {
-    if (navigator.clipboard && text) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert("Text copied to clipboard!");
+    // Do NOT set global loading state or clear targetText for this operation
+    try {
+      const response = await api.post("/api/translate/translate/", {
+        text: textToSpeak,
+        source_lang: langToSpeak,
+        target_lang: langToSpeak, // Request audio for the same language
       });
+
+      const { audio_base64 } = response.data;
+      const audio = new Audio(`data:audio/mpeg;base64,${audio_base64}`);
+      audio.play();
+    } catch (err) {
+      console.error("Error playing text as speech:", err);
+      // Optionally, set a specific error for audio playback if needed, but not the main error state
     }
   };
 
-  const playTextAsSpeech = (text, lang) => {
-    if (!text || loading) return;
-    handleTranslate(text, lang, lang);
+  // Function to copy text to clipboard
+  const handleCopyToClipboard = (text) => {
+    if (navigator.clipboard && text) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          console.log("Text copied to clipboard!");
+        })
+        .catch((err) => {
+          console.error("Failed to copy text: ", err);
+        });
+    }
   };
 
+  // Updated: playTextAsSpeech now calls playAudioOnly
+  const playTextAsSpeech = (text, lang) => {
+    if (!text || loading) return; // Still respect global loading for now
+    playAudioOnly(text, lang);
+  };
+
+  // Function to swap source and target languages and their respective texts
+  const handleSwapLanguages = () => {
+    // Temporarily store current values
+    const tempSourceLang = sourceLang;
+    const tempTargetLang = targetLang;
+    const tempSourceText = sourceText;
+    const tempTargetText = targetText;
+
+    // Perform the swap
+    setSourceLang(tempTargetLang);
+    setTargetLang(tempSourceLang);
+    setSourceText(tempTargetText);
+    setTargetText(tempSourceText);
+    setError(""); // Clear errors after swap
+  };
+
+  // List of supported languages
   const languages = [
     { code: "en", name: "English" },
     { code: "hi", name: "Hindi" },
@@ -237,6 +297,7 @@ function Translate() {
                 onSpeak={playTextAsSpeech}
                 isListening={isListening}
                 recognitionSupported={!!recognition}
+                isLoading={loading} // Pass loading state to disable buttons
               />
             </div>
             <div className="col-md-6">
@@ -257,6 +318,7 @@ function Translate() {
               className="btn btn-light border"
               onClick={handleSwapLanguages}
               title="Swap Languages"
+              disabled={loading} // Disable swap button when loading
             >
               <i className="bi bi-arrow-left-right"></i>
             </button>
@@ -265,8 +327,8 @@ function Translate() {
             <button
               type="button"
               className="btn btn-primary btn-lg"
-              onClick={() => handleTranslate()}
-              disabled={loading || !sourceText}
+              onClick={handleTranslate} // Call handleTranslate directly
+              disabled={loading || !sourceText.trim()} // Disable if no source text or loading
             >
               {loading ? (
                 <LoadingIndicator />

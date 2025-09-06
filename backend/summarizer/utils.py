@@ -1,5 +1,7 @@
+
 import pdfplumber
 from docx import Document
+from langdetect import detect
 
 def extract_text_from_pdf(file):
     text = ''
@@ -22,3 +24,12 @@ def extract_text(file):
         return file.read().decode('utf-8')
     else:
         raise ValueError('Unsupported file format')
+
+def is_supported_filetype(filename):
+    return filename.lower().endswith(('.pdf', '.docx', '.txt'))
+
+def detect_language(text):
+    try:
+        return detect(text)
+    except Exception:
+        return "unknown"

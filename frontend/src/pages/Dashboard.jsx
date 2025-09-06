@@ -24,6 +24,12 @@ const Dashboard = () => {
       path: "/messenger",
       linkText: "Open Messenger",
     },
+    {
+      title: "Patient's Health History",
+      text: "Track your patient's history about past symptoms, prescriptions, and recovery progress.",
+      path: "/history",
+      linkText: "Track Progress",
+    },
   ];
 
   const patientFeatures = [
