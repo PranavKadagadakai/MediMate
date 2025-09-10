@@ -22,5 +22,7 @@ tmp
 db.sqlite3
 # Media files
 /media/
+# Model files
+backend/models/*
 
 pranavkadagadakai-medimate.txt
