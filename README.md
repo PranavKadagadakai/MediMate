@@ -8,8 +8,8 @@ An AI-powered healthcare platform to enhance doctor-patient interaction, improve
 
 This system offers the following features:
 
-- **Medical Report Summarization** using LLMs (e.g., BART, T5)
-- **AI Medical Chatbot** for health-related queries
+- **Medical Report Summarization** using LLMs (BART, T5)
+- **AI Medical Chatbot** with local GGUF models (DeepSeek/BioMistral) or Hugging Face
 - **Doctor-Patient Messaging Interface** with secure real-time chat
 - **Language Translation + TTS** for multilingual communication
 - **Doctor Discussion Forum** for knowledge sharing
@@ -17,44 +17,29 @@ This system offers the following features:
 
 ---
 
-## 🚀 Features
-
-| Feature                      | Description                                               |
-| ---------------------------- | --------------------------------------------------------- |
-| Medical Report Summarization | Simplifies complex reports for patients using LLMs        |
-| AI Chatbot                   | Answers health queries using Hugging Face/Gemini          |
-| Secure Messaging             | Real-time chat between doctor and patient                 |
-| Language Translator + TTS    | Breaks language barriers with speech feedback             |
-| Doctors Forum                | Exclusive space for verified medical professionals        |
-| Medical History Tracker      | Chronological logging of symptoms, medications, diagnoses |
-
----
-
 ## 🛠️ Technology Stack
 
-| Component       | Tech Stack                        |
-| --------------- | --------------------------------- |
-| Backend         | Django (Python)                   |
-| LLM Integration | Hugging Face Transformers, Gemini |
-| Frontend        | React + Bootstrap                 |
-| DB              | SQLite / PostgreSQL / MongoDB     |
-| TTS             | gTTS, pyttsx3                     |
-| Auth            | JWT-based login & role management |
+| Component       | Tech Stack                                     |
+| --------------- | ---------------------------------------------- |
+| Backend         | Django (Python 3.11)                           |
+| LLM Integration | Hugging Face Transformers, llama.cpp           |
+| Frontend        | React + Vite + Bootstrap                       |
+| DB              | SQLite (default), PostgreSQL/MongoDB supported |
+| TTS             | gTTS, pyttsx3                                  |
+| Auth            | JWT-based login & role management              |
 
 ---
 
 ## 📦 Setup Instructions
 
-1. **Clone the repository**
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/PranavKadagadakai/Doctor-Patient_Communication_System.git
-cd Doctor-Patient-Communication-System
+git clone https://github.com/PranavKadagadakai/MediMate.git
+cd MediMate
 ```
 
-2. **Ensure `requirements.txt` is present**
-
-3. **Run the setup script**
+2. **Run the setup script**
 
 ```bash
 chmod +x setup.sh
@@ -63,23 +48,38 @@ chmod +x setup.sh
 
 This script will:
 
-- Create a virtual environment
-- Activate it
+- Create and activate a Python virtual environment inside backend/
 - Upgrade `pip`
-- Install dependencies from `requirements.txt`
+- Install backend dependencies (requirements.txt)
+- Install frontend dependencies (pnpm install or npm install)
+- Run database migrations
 
-4. **Run the app**
-   _Windows_
+3. **Activate backend environment (manual, if needed)**
 
 ```bash
+source backend/.venv/bin/activate   # Linux/Mac
+backend\.venv\Scripts\activate.bat # Windows
+```
+
+4. **Run backend server**
+
+```bash
+cd backend
 python manage.py runserver
 ```
 
-_Linux/Mac_
+5. **Run frontend (separate terminal)**
 
 ```bash
-python3 manage.py runserver
+cd frontend
+pnpm dev   # or: npm run dev
 ```
+
+6. **Chatbot model setup**
+
+Download the required DeepSeek-R1-1.5B or BioMistral-7B GGUF model.
+
+Update the path in backend/chatbot/views.py → MODEL_PATH.
 
 ---
 
