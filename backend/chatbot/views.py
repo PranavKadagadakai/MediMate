@@ -1,25 +1,17 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import ConversationHistory
-from django.core.cache import cache
 import logging
 import os
-from llama_cpp import Llama
+
+from django.core.cache import cache
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import ConversationHistory
+from .ollama_client import ollama_generate
 
 logger = logging.getLogger("chatbot")
 logger.setLevel(logging.INFO)
 
-# Path to your DeepSeek R1 1.5B GGUF model file
-MODEL_PATH = "/home/pranav/Projects/Web_Dev/MediMate/backend/models/DeepSeek-R1-1_5B.Q4_K_M.gguf" # BioMistral-7B.Q4_K_M.gguf
-
-# Load the model once at startup
-llm = Llama(
-    model_path=MODEL_PATH,
-    n_ctx=2048,
-    n_threads=4,  # adjust for your CPU
-    verbose=False
-)
 
 SYSTEM_INSTRUCTION = (
     "You are a helpful, accurate and cautious medical assistant. "
@@ -50,22 +42,7 @@ def build_prompt(history, user_input):
 
 
 def generate_reply_from_prompt(prompt: str) -> str:
-    try:
-        output = llm(
-            prompt,
-            max_tokens=256,
-            temperature=0.7,
-            top_p=0.95,
-            stop=["User:", "Assistant:"]
-        )
-        # Get the generated text after the prompt
-        reply = output["choices"][0]["text"].strip()
-        if not reply:
-            reply = "Sorry, I couldn't generate a response."
-        return reply
-    except Exception as e:
-        logger.exception("Generation failed")
-        return "Sorry, I couldn't generate a response due to an error."
+    return ollama_generate(prompt)
 
 
 class ChatbotAPIView(APIView):
@@ -81,13 +58,20 @@ class ChatbotAPIView(APIView):
         if not user_input:
             return Response({"error": "Message cannot be empty."}, status=400)
         if len(user_input) > 1000:
-            return Response({"error": "Message too long. Limit to 1000 characters."}, status=400)
+            return Response(
+                {"error": "Message too long. Limit to 1000 characters."}, status=400
+            )
 
         # Rate limiting
         cache_key = f"chatbot_rate_{user.id}"
         req_count = cache.get(cache_key, 0)
         if req_count >= 10:
-            return Response({"error": "Rate limit exceeded. Please wait before sending more messages."}, status=429)
+            return Response(
+                {
+                    "error": "Rate limit exceeded. Please wait before sending more messages."
+                },
+                status=429,
+            )
         cache.set(cache_key, req_count + 1, timeout=60)
 
         # Retrieve and update conversation history
@@ -105,7 +89,12 @@ class ChatbotAPIView(APIView):
                 history_obj.save()
 
             logger.info(f"User {user.id} message processed")
-            return Response({"response": bot_reply, "history": history_obj.history[-10:]})
+            return Response(
+                {"response": bot_reply, "history": history_obj.history[-10:]}
+            )
         except Exception as e:
             logger.error(f"Chatbot error for user {user.id}: {e}")
-            return Response({"error": "Chatbot failed to respond. Please try again later."}, status=500)
+            return Response(
+                {"error": "Chatbot failed to respond. Please try again later."},
+                status=500,
+            )
