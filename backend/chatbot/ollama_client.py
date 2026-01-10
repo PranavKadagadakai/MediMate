@@ -5,7 +5,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "deepseek-r1:1.5b"
+OLLAMA_MODEL = "deepseek-r1:8b"
 TIMEOUT = 120  # seconds
 
 

@@ -1,101 +1,140 @@
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-
 import logging
-from transformers import pipeline, AutoTokenizer
-from .utils import extract_text, detect_language, is_supported_filetype
 import os
 
+import requests
+from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-# Efficient model/tokenizer loading
-SUMMARIZER_MODEL = "facebook/bart-large-cnn"
-summarizer = pipeline("summarization", model=SUMMARIZER_MODEL)
-tokenizer = AutoTokenizer.from_pretrained(SUMMARIZER_MODEL)
+from .utils import detect_language, extract_text, is_supported_filetype
 
 logger = logging.getLogger("summarizer")
 logger.setLevel(logging.INFO)
+
+# Ollama configuration
+OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "deepseek-r1:8b"
+
+# Safe chunk size for LLMs (chars, not tokens)
+MAX_CHARS_PER_CHUNK = 3000
+
+
+def ollama_summarize(text: str) -> str:
+    """
+    Sends text to Ollama DeepSeek-R1 model for summarization.
+    """
+    prompt = (
+        "Summarize the following document clearly and concisely. "
+        "Preserve key points and technical accuracy.\n\n"
+        f"{text}"
+    )
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"temperature": 0.2, "top_p": 0.9},
+    }
+
+    response = requests.post(OLLAMA_URL, json=payload, timeout=300)
+    response.raise_for_status()
+
+    data = response.json()
+    return data.get("response", "").strip()
+
 
 class SummarizerAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        if 'file' not in request.FILES:
-            return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+        if "file" not in request.FILES:
+            return Response(
+                {"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        uploaded_file = request.FILES['file']
+        uploaded_file = request.FILES["file"]
         filename = uploaded_file.name
-        # Validate file type
-        if not is_supported_filetype(filename):
-            return Response({"error": "Unsupported file format. Please upload PDF, DOCX, or TXT."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate file size (limit to 5MB)
+        if not is_supported_filetype(filename):
+            return Response(
+                {"error": "Unsupported file format. Please upload PDF, DOCX, or TXT."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if uploaded_file.size > 5 * 1024 * 1024:
-            return Response({"error": "File too large. Maximum allowed size is 5MB."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "File too large. Maximum allowed size is 5MB."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             text = extract_text(uploaded_file)
-            if not text or len(text.strip()) < 50:
-                return Response({"error": "Document is empty or too short to summarize."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Language detection
+            if not text or len(text.strip()) < 50:
+                return Response(
+                    {"error": "Document is empty or too short to summarize."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             lang = detect_language(text)
             if lang != "en":
-                return Response({"error": f"Document language detected as '{lang}'. Only English is supported."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {
+                        "error": f"Document language detected as '{lang}'. Only English is supported."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
+            # Character-based chunking
+            chunks = [
+                text[i : i + MAX_CHARS_PER_CHUNK]
+                for i in range(0, len(text), MAX_CHARS_PER_CHUNK)
+            ]
 
-            # Improved chunking: split text into chunks of <=1024 tokens, summarize each
-            max_tokens = 1024
-            words = text.split()
-            chunks = []
-            current_chunk = []
-            current_len = 0
-            for word in words:
-                token_len = len(tokenizer.tokenize(word))
-                if current_len + token_len > max_tokens:
-                    if current_chunk:
-                        chunks.append(' '.join(current_chunk))
-                    current_chunk = [word]
-                    current_len = token_len
-                else:
-                    current_chunk.append(word)
-                    current_len += token_len
-            if current_chunk:
-                chunks.append(' '.join(current_chunk))
-
-            # If no valid chunks, fallback to summarizing the whole text
-            if not chunks:
-                if text.strip():
-                    chunks = [text.strip()]
-                else:
-                    return Response({"error": "Failed to process document into valid chunks."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            logger.info(f"Summarizing {filename} with {len(chunks)} chunk(s)")
+            logger.info(
+                f"Summarizing {filename} using DeepSeek-R1 with {len(chunks)} chunk(s)"
+            )
 
             summary_parts = []
-            for idx, chunk in enumerate(chunks):
+            for idx, chunk in enumerate(chunks, start=1):
+                if not chunk.strip():
+                    continue
                 try:
-                    if not chunk.strip():
-                        continue
-                    part = summarizer(chunk, max_length=150, min_length=30, do_sample=False)[0]
-                    summary_parts.append(part['summary_text'])
+                    summary = ollama_summarize(chunk)
+                    summary_parts.append(summary)
                 except Exception as e:
-                    logger.error(f"Chunk {idx+1} failed: {e}")
-                    return Response({"error": f"Failed to summarize chunk {idx+1}: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    logger.error(f"Chunk {idx} summarization failed: {e}")
+                    return Response(
+                        {"error": f"Failed to summarize chunk {idx}."},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
 
-            summary = " ".join(summary_parts)
+            final_summary = " ".join(summary_parts)
 
-            # Clean up file if needed (in-memory files are auto-cleaned)
-            if hasattr(uploaded_file, 'temporary_file_path'):
+            # Cleanup temp file if applicable
+            if hasattr(uploaded_file, "temporary_file_path"):
                 try:
                     os.remove(uploaded_file.temporary_file_path())
                 except Exception:
                     pass
 
-            return Response({"summary": summary})
+            return Response({"summary": final_summary})
+
+        except requests.exceptions.ConnectionError:
+            logger.error("Ollama server is not reachable")
+            return Response(
+                {"error": "Local Ollama service is not running."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         except Exception as e:
             logger.error(f"Summarization error for {filename}: {e}")
-            return Response({"error": "An error occurred during summarization. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {
+                    "error": "An error occurred during summarization. Please try again later."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
